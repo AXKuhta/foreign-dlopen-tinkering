@@ -10,6 +10,15 @@
 // Third dlsym()
 // int VkEnumeratePhysicalDevices(void * instance, unsigned int * pPhysicalDeviceCount, void * pPhysicalDevices) {}
 
+// Library initialization
+static void initialize(int argc, char * argv[], char * envp[]) __attribute__((constructor));
+
+void initialize(int argc, char * argv[], char * envp[]) {
+	printf("VulkanLink initializing...\n");
+	printf("Argcount: %d\n", argc);
+	printf("Argv 0: %s\n", argv[0]);
+}
+
 void stub_unimp() {
 	printf("UNIMPLEMENTED\n");
 }
