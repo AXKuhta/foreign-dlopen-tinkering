@@ -101,22 +101,6 @@ err:
 #define Z_PROG		0
 #define Z_INTERP	1
 
-#if !STDLIB
-int main(int argc, char *argv[]);
-
-void z_entry(unsigned long *sp, void (*fini)(void))
-{
-	int argc;
-	char **argv;
-
-	entry_sp = sp;
-	x_fini = fini;
-	argc = (int)*(sp);
-	argv = (char **)(sp + 1);
-	main(argc, argv);
-}
-#endif
-
 void init_exec_elf(char *argv[])
 {
 	/* We assume that argv comes from the original executable params. */
