@@ -10,4 +10,7 @@ extern char *(*z_dlerror)(void);
 
 void init_foreign_dlopen(const char *file);
 
+void enter_bionic_world(void);
+void enter_glibc_world(void);
+
 #endif /* FOREIGN_DLOPEN_H */

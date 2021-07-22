@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <unistd.h>
 
 #include "foreign-dlopen/foreign_dlopen.h"
 
@@ -12,9 +13,6 @@
 // Third dlsym()
 // int VkEnumeratePhysicalDevices(void * instance, unsigned int * pPhysicalDeviceCount, void * pPhysicalDevices) {}
 
-uint64_t read_tpidr_el0(void);
-void write_tpidr_el0(uint64_t value);
-
 // Library initialization
 static void initialize(int argc, char * argv[], char * envp[]) __attribute__((constructor));
 
@@ -23,10 +21,27 @@ void initialize(int argc, char * argv[], char * envp[]) {
 	printf("Argcount: %d\n", argc);
 	printf("Argv 0: %s\n", argv[0]);
 
-	uint64_t saved_tpidr_el0 = read_tpidr_el0();
-	printf("TPIDR_EL0: %lu\n", saved_tpidr_el0);
+	if (getuid() != 0) {
+		printf("Need to be run as root\n");
+		exit(-1);
+	}
+
+	(void) chroot("/proc/1/root");
+	(void) chdir("/");
 
 	init_exec_elf(argv);
+	init_foreign_dlopen("/data/data/com.termux/files/home/fdlhelper");
+
+	enter_bionic_world();
+
+	void *h = z_dlopen("libc.so", 2); // 2 == RTLD_NOW
+
+	void *p = z_dlsym(h, "printf");
+	int (*_printf)(const char *fmt, ...) = p;
+
+	_printf("Hello from the other side!\n");
+
+	enter_glibc_world();
 }
 
 void stub_unimp() {

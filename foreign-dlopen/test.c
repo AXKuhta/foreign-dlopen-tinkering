@@ -5,9 +5,6 @@
 
 #define RTLD_NOW 0x0002
 
-uint64_t read_tpidr_el0(void);
-void write_tpidr_el0(uint64_t value);
-
 int main(int argc, char *argv[])
 {
 	(void)argc;
@@ -20,13 +17,13 @@ int main(int argc, char *argv[])
 	(void) chroot("/proc/1/root");
 	(void) chdir("/");
 
-	uint64_t saved_tpidr_el0 = read_tpidr_el0();
-
-	printf("TPIDR_EL0: %lu\n", saved_tpidr_el0);
-
 	init_exec_elf(argv);
 
 	init_foreign_dlopen("/data/data/com.termux/files/home/fdlhelper");
+
+	// The fun section
+	// =================================================
+	enter_bionic_world();
 
 	void *h = z_dlopen("libc.so", RTLD_NOW);
 
@@ -41,7 +38,8 @@ int main(int argc, char *argv[])
 
 	_printf("Vulkan vkCreateInstance: %p\n", vkinst);
 
-	write_tpidr_el0(saved_tpidr_el0);
+	enter_glibc_world();
+	// =================================================
 
 	printf("Rewrite TPIDR_EL0!\n");
 	printf("TPIDR_EL0: %lu\n", read_tpidr_el0());
