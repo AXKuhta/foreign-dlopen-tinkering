@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #include "foreign-dlopen/foreign_dlopen.h"
 
@@ -12,6 +13,11 @@
 
 // Third dlsym()
 // int VkEnumeratePhysicalDevices(void * instance, unsigned int * pPhysicalDeviceCount, void * pPhysicalDevices) {}
+
+void * lvk;
+void resolve_stuff(void);
+
+static int (*_vkEnumerateInstanceLayerProperties)(unsigned int * pPropertyCount, void * pProperties);
 
 // Library initialization
 static void initialize(int argc, char * argv[], char * envp[]) __attribute__((constructor));
@@ -34,14 +40,35 @@ void initialize(int argc, char * argv[], char * envp[]) {
 
 	enter_bionic_world();
 
-	void *h = z_dlopen("libc.so", 2); // 2 == RTLD_NOW
+	lvk = z_dlopen("libvulkan.so", 2); // 2 == RTLD_NOW
 
-	void *p = z_dlsym(h, "printf");
-	int (*_printf)(const char *fmt, ...) = p;
+	if (!lvk) {
+		enter_glibc_world();
+		printf("Loading libvulkan.so failed\n");
+		exit(-1);
+	}
 
-	_printf("Hello from the other side!\n");
+	resolve_stuff();
 
 	enter_glibc_world();
+
+	printf("VulkanLink initialized!\n");
+}
+
+void * safe_resolve(const char * symbol) {
+	void * fn = z_dlsym(lvk, symbol);
+
+	if (!fn) {
+		enter_glibc_world();
+		printf("Failed to resolve [%s]\n", symbol);
+		exit(-1);
+	}
+
+	return fn;
+}
+
+void resolve_stuff() {
+	_vkEnumerateInstanceLayerProperties = safe_resolve("vkEnumerateInstanceLayerProperties");
 }
 
 void stub_unimp() {
@@ -50,7 +77,18 @@ void stub_unimp() {
 
 int vkCreateInstance(void * pCreateInfo, void * pAllocator, void * pInstance) { stub_unimp(); };
 int vkEnumerateInstanceExtensionProperties(void * pLayerName, unsigned int * pPropertyCount, void * pProperties) { stub_unimp(); };
-int vkEnumerateInstanceLayerProperties(unsigned int * pPropertyCount, void * pProperties) { stub_unimp(); };
+
+
+int vkEnumerateInstanceLayerProperties(unsigned int * pPropertyCount, void * pProperties) {
+	enter_bionic_world();
+		int rc = _vkEnumerateInstanceLayerProperties(pPropertyCount, pProperties);
+	enter_glibc_world();
+	stub_unimp();
+
+	return rc;
+};
+
+
 void vkDestroyInstance(void * instance, void * pAllocator) { stub_unimp(); };
 int vkEnumeratePhysicalDevices(void * instance, unsigned int * pPhysicalDeviceCount, void * pPhysicalDevices) { stub_unimp(); };
 void * vkGetInstanceProcAddr(void * instance, void * pName) { stub_unimp(); };
