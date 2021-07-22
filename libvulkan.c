@@ -1,5 +1,7 @@
 #include <stdio.h>
+#include <stdint.h>
 
+#include "foreign-dlopen/foreign_dlopen.h"
 
 // First dlsym()
 // int VkCreateInstance(void * pCreateInfo, void * pAllocator, void * pInstance) {}
@@ -10,6 +12,9 @@
 // Third dlsym()
 // int VkEnumeratePhysicalDevices(void * instance, unsigned int * pPhysicalDeviceCount, void * pPhysicalDevices) {}
 
+uint64_t read_tpidr_el0(void);
+void write_tpidr_el0(uint64_t value);
+
 // Library initialization
 static void initialize(int argc, char * argv[], char * envp[]) __attribute__((constructor));
 
@@ -17,6 +22,11 @@ void initialize(int argc, char * argv[], char * envp[]) {
 	printf("VulkanLink initializing...\n");
 	printf("Argcount: %d\n", argc);
 	printf("Argv 0: %s\n", argv[0]);
+
+	uint64_t saved_tpidr_el0 = read_tpidr_el0();
+	printf("TPIDR_EL0: %lu\n", saved_tpidr_el0);
+
+	init_exec_elf(argv);
 }
 
 void stub_unimp() {
