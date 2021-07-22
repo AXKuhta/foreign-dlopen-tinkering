@@ -7,6 +7,12 @@ CFLAGS += -DELFCLASS=ELFCLASS64
 
 # Optimize please
 CFLAGS += -Os
+
+# Enable position independent code
+CFLAGS += -fpic
+
+# Use the same flags for assembly
+ASFLAGS = $(CFLAGS)
 # =================================================
 
 
