@@ -8,7 +8,7 @@ libvulkan.o: libvulkan.c
 	$(CC) $(CFLAGS) -c libvulkan.c -o libvulkan.o
 
 clean:
-	rm -rf *.so
+	rm -rf *.so.1
 	rm -rf *.o
 
 test:
